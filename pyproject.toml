@@ -1,0 +1,48 @@
+[tool.poetry]
+name = "pgcs"
+version = "0.1.0"
+description = "Pgcs is an intuitive TUI tool designed to simplify your interaction with Google Cloud Storage. Stay in your coding zone by navigating directories, searching files (with case-insensitive support), and previewing files all from your terminal. Easily save paths to clipboard or download files with straightforward keyboard shortcuts. Experience a seamless Cloud Storage interaction right from your terminal; no more swapping to a browser. Stimulate your productivity with Pgcs."
+authors = ["Asugawara <asgasw@gmail.com>"]
+readme = "README.md"
+packages = [{include = "pgcs"}]
+
+[tool.poetry.scripts]
+pg = "pgcs.main:main"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pygments = "^2.17.2"
+prompt-toolkit = "^3.0.43"
+pydantic = "^2.5.3"
+pyperclip = "^1.8.2"
+gcsfs = "^2023.12.2.post1"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.12.1"
+isort = "^5.13.2"
+mypy = "^1.8.0"
+pytest = "^7.4.3"
+types-pygments = "^2.17.0.0"
+pre-commit = "^3.5.0"
+
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+python_version = "3.8"
+plugins = "pydantic.mypy"
+allow_untyped_calls = true
+check_untyped_defs = true
+ignore_missing_imports = true
+strict = true
+
+[[tool.mypy.overrides]]
+module = [
+  "tests.*"
+]
+ignore_errors = true
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
