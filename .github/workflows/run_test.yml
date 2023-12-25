@@ -1,4 +1,4 @@
-name: Test pmemo
+name: Test pgcs
 
 on:
   push:

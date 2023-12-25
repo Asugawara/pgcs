@@ -33,6 +33,14 @@ command | description
 `pg pref --init` | initialize or reset preferences file
 `pg pref <key> <value>` | set preference with key to value
 
+> [!Note]
+> If you want to use clipboard functionality on Linux without a GUI, you need to execute the following. Below is an example.
+```bash
+$ sudo apt-get install xvfb
+$ sudo apt-get install xclip
+$ Xvfb :99 -screen 0 1280x720x16 &
+$ export DISPLAY=:99
+```
 
 # Versioning
 This repo uses [Semantic Versioning](https://semver.org/).

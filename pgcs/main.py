@@ -11,7 +11,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="cmd")
     parser_traverse = subparsers.add_parser(
-        "traverse", help="default positional argument `pgcs` == `pgcs traverse`"
+        "traverse", help="default positional argument `pg` == `pg traverse`"
     )
     parser_pref = subparsers.add_parser("pref", help="set pref")
     parser_pref.add_argument("--init", action="store_true")

@@ -1,10 +1,28 @@
 [tool.poetry]
 name = "pgcs"
-version = "0.1.0"
+version = "0.1.1"
 description = "Pgcs is an intuitive TUI tool designed to simplify your interaction with Google Cloud Storage. Stay in your coding zone by navigating directories, searching files (with case-insensitive support), and previewing files all from your terminal. Easily save paths to clipboard or download files with straightforward keyboard shortcuts. Experience a seamless Cloud Storage interaction right from your terminal; no more swapping to a browser. Stimulate your productivity with Pgcs."
 authors = ["Asugawara <asgasw@gmail.com>"]
 readme = "README.md"
 packages = [{include = "pgcs"}]
+homepage = "https://github.com/Asugawara/pgcs"
+repository = "https://github.com/Asugawara/pgcs"
+license = "MIT"
+keywords = [
+  "GoogleCloudStorage",
+  "gcsfs"
+]
+classifiers=[
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: Implementation :: PyPy"
+]
 
 [tool.poetry.scripts]
 pg = "pgcs.main:main"
