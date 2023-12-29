@@ -31,8 +31,8 @@ from prompt_toolkit.widgets import TextArea
 from pgcs.preferences import PREF_FILE_PATH, GCSPref
 from pgcs.utils import error_handler
 
-pref = GCSPref.parse_file(PREF_FILE_PATH) if PREF_FILE_PATH.exists() else GCSPref()
-gfs = gcsfs.GCSFileSystem(os.getenv("PROJECT_ID", pref.default_project_id))
+pref = GCSPref.read() if PREF_FILE_PATH.exists() else GCSPref()
+gfs = gcsfs.GCSFileSystem()
 
 ITEM_CLASS = "class:item"
 SELECTED_CLASS = "class:selected"
