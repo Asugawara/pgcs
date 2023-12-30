@@ -1,5 +1,4 @@
 import argparse
-import os
 
 import gcsfs
 
@@ -13,21 +12,25 @@ def main() -> None:
     parser_traverse = subparsers.add_parser(
         "traverse", help="default positional argument `pg` == `pg traverse`"
     )
+    parser_traverse.add_argument("root", nargs="?")
     parser_pref = subparsers.add_parser("pref", help="set pref")
     parser_pref.add_argument("--init", action="store_true")
     parser_pref.add_argument("key", nargs="?")
     parser_pref.add_argument("value", nargs="?")
-    parser.set_defaults(cmd="traverse")
+    parser.set_defaults(cmd="traverse", root=None)
     args = parser.parse_args()
 
-    pref = GCSPref.parse_file(PREF_FILE_PATH) if PREF_FILE_PATH.exists() else GCSPref()
+    pref = GCSPref.read() if PREF_FILE_PATH.exists() else GCSPref()
     if args.cmd == "traverse":
-        gfs = gcsfs.GCSFileSystem(os.getenv("PROJECT_ID", pref.default_project_id))
-        traverse_gcs(gfs.buckets)
+        gfs = gcsfs.GCSFileSystem()
+        buckets = gfs.ls(args.root) if args.root is not None else gfs.buckets
+        traverse_gcs(buckets)
     elif args.cmd == "pref":
         if args.init:
             new_pref = GCSPref()
         elif args.key and args.value:
+            if args.value in ("True", "False"):
+                args.value = bool(args.value)
             new_pref = pref.model_copy(update={args.key: args.value})
         else:
             raise ValueError
