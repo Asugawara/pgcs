@@ -8,6 +8,6 @@ def error_handler(func: Callable[[Any], Any]) -> Callable[[Any], Any]:
         try:
             return func(*args, **kwargs)
         except KeyboardInterrupt:
-            exit()
+            pass
 
     return wrapper
