@@ -175,6 +175,7 @@ def custom_select(
         entry = choices.get(entry_name)
         if entry is None:
             return ""
+        content = ""
         if isinstance(entry, File):
             content = get_file_info(entry.path())
         elif isinstance(entry, (Directory, Bucket)):

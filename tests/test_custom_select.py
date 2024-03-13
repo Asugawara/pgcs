@@ -15,18 +15,14 @@ def test_custom_select(mock_gfs):
     mock_gfs.ls.return_value = []
     with create_pipe_input() as pipe_input:
         pipe_input.send_text(REVERSE_ANSI_SEQUENCES[Keys.Enter])
-        selected = custom_select([], input=pipe_input, output=DummyOutput())
+        selected = custom_select({}, input=pipe_input, output=DummyOutput())
         assert selected == ""
 
         pipe_input.send_text(REVERSE_ANSI_SEQUENCES[Keys.Enter])
         selected = custom_select(
-            ["a", "b", "c"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c"), input=pipe_input, output=DummyOutput()
         )
         assert selected == "a"
-
-        pipe_input.send_text(REVERSE_ANSI_SEQUENCES[Keys.Enter])
-        with pytest.raises(TypeError) as e:
-            selected = custom_select([1, 2, 3], input=pipe_input, output=DummyOutput())
 
 
 @patch("pgcs.custom_select.gfs")
@@ -36,7 +32,7 @@ def test_custom_select_move_cursor(mock_gfs):
     with create_pipe_input() as pipe_input:
         pipe_input.send_text(REVERSE_ANSI_SEQUENCES[Keys.Enter])
         selected = custom_select(
-            ["a", "b", "c"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c"), input=pipe_input, output=DummyOutput()
         )
         assert selected == "a"
 
@@ -46,7 +42,7 @@ def test_custom_select_move_cursor(mock_gfs):
             )
         )
         selected = custom_select(
-            ["a", "b", "c"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c"), input=pipe_input, output=DummyOutput()
         )
         assert selected == "b"
 
@@ -59,7 +55,7 @@ def test_custom_select_move_cursor(mock_gfs):
             )
         )
         selected = custom_select(
-            ["a", "b", "c"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c"), input=pipe_input, output=DummyOutput()
         )
         assert selected == "c"
 
@@ -72,7 +68,7 @@ def test_custom_select_move_cursor(mock_gfs):
             )
         )
         selected = custom_select(
-            ["a", "b", "c"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c"), input=pipe_input, output=DummyOutput()
         )
         assert selected == "a"
 
@@ -82,7 +78,7 @@ def test_custom_select_move_cursor(mock_gfs):
             )
         )
         selected = custom_select(
-            ["a", "b", "c"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c"), input=pipe_input, output=DummyOutput()
         )
         assert selected == "c"
 
@@ -95,7 +91,7 @@ def test_custom_select_move_cursor(mock_gfs):
             )
         )
         selected = custom_select(
-            ["a", "b", "c"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c"), input=pipe_input, output=DummyOutput()
         )
         assert selected == "b"
 
@@ -108,7 +104,7 @@ def test_custom_select_move_cursor(mock_gfs):
             )
         )
         selected = custom_select(
-            ["a", "b", "c"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c"), input=pipe_input, output=DummyOutput()
         )
         assert selected == "a"
 
@@ -122,7 +118,7 @@ def test_custom_select_using_filter(mock_gfs):
     ):
         pipe_input.send_text("".join((REVERSE_ANSI_SEQUENCES[Keys.Enter])))
         selected = custom_select(
-            ["a", "b", "c", "aa"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c", aa="aa"), input=pipe_input, output=DummyOutput()
         )
         assert selected == "a"
 
@@ -132,7 +128,7 @@ def test_custom_select_using_filter(mock_gfs):
             )
         )
         selected = custom_select(
-            ["a", "b", "c", "aa"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c", aa="aa"), input=pipe_input, output=DummyOutput()
         )
         assert selected == "aa"
 
@@ -142,7 +138,7 @@ def test_custom_select_using_filter(mock_gfs):
     ):
         pipe_input.send_text("".join((REVERSE_ANSI_SEQUENCES[Keys.Enter])))
         selected = custom_select(
-            ["a", "b", "c", "aa"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c", aa="aa"), input=pipe_input, output=DummyOutput()
         )
         assert selected == ""
 
@@ -152,6 +148,6 @@ def test_custom_select_using_filter(mock_gfs):
             )
         )
         selected = custom_select(
-            ["a", "b", "c", "aa"], input=pipe_input, output=DummyOutput()
+            dict(a="a", b="b", c="c", aa="aa"), input=pipe_input, output=DummyOutput()
         )
         assert selected == ""
