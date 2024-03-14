@@ -58,13 +58,16 @@ class Directory(Entry):
         return self._children.get(entry_name, default)
 
     def add(self, entry: Entry) -> None:
-        if entry.path().startswith(self.path()):
+        if entry.name and entry.path().startswith(self.path()):
             if entry.name not in self._children:
                 self._children[entry.name] = entry
 
     def load(self, force: bool = False) -> None:
-        if not self._children or force:
+        if force:
+            self._children = {}
+        if not self._children:
             for _, dirnames, filenames in gfs.walk(self.path(), maxdepth=1):
+                print(f"{dirnames=}, {filenames=}")
                 for dirname in dirnames:
                     self.add(Directory(dirname, self))
                 for filename in filenames:
@@ -95,17 +98,21 @@ class Bucket(Entry):
         return self._children.get(entry_name, default)
 
     def add(self, entry: Entry) -> None:
-        if entry.path().startswith(self.path()):
+        if entry.name and entry.path().startswith(self.path()):
             if entry.name not in self._children:
                 self._children[entry.name] = entry
 
     def load(self, force: bool = False) -> None:
-        if not self._children or force:
+        if force:
+            self._children = {}
+        if not self._children:
             for _, dirnames, filenames in gfs.walk(self.path(), maxdepth=1):
                 for dirname in dirnames:
-                    self.add(Directory(dirname, self))
+                    if dirname:
+                        self.add(Directory(dirname, self))
                 for filename in filenames:
-                    self.add(File(filename, self))
+                    if filename:
+                        self.add(File(filename, self))
 
     def ls(self) -> List[str]:
         return [entry.path() for entry in self._children.values()]
