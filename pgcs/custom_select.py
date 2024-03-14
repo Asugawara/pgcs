@@ -1,7 +1,7 @@
 import os
 import re
-from functools import partial
-from typing import Any, List, Tuple
+from functools import lru_cache, partial
+from typing import Any, Dict, List, Tuple
 
 import gcsfs
 from prompt_toolkit.application import Application
@@ -28,6 +28,8 @@ from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.styles import Style
 from prompt_toolkit.widgets import TextArea
 
+from pgcs.file_system.base import Entry
+from pgcs.file_system.entries import Bucket, Directory, File
 from pgcs.preferences import PREF_FILE_PATH, GCSPref
 from pgcs.utils import error_handler
 
@@ -38,12 +40,30 @@ ITEM_CLASS = "class:item"
 SELECTED_CLASS = "class:selected"
 
 
+@lru_cache
+def get_file_info(file_path: str, preview: bool = False) -> str:
+    content = ""
+    if preview:
+        content = gfs.read_block(file_path, 0, 50, delimiter=b"\n").decode("utf-8")
+    file_stats = gfs.stat(file_path)
+    file_createdat = f"created_at: {file_stats['timeCreated']}"
+    file_updatedat = f"updated_at: {file_stats['updated']}"
+    return "\n".join((file_createdat, file_updatedat, content))
+
+
 class CustomFormattedTextControl(FormattedTextControl):
-    def __init__(self, text: AnyFormattedText, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        text: AnyFormattedText,
+        choices: Dict[str, Entry],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         super(CustomFormattedTextControl, self).__init__(
             self._convert_callable_text(text), *args, **kwargs
         )
         self.pointed_at = 0
+        self._choices = choices
 
     @property
     def choice_count(self) -> int:
@@ -101,19 +121,23 @@ class CustomFormattedTextControl(FormattedTextControl):
         def _(event: KeyPressEvent) -> None:
             entry = to_plain_text(self.get_pointed_at()).strip()
             if entry:
-                event.app.exit(result=os.path.dirname(os.path.dirname(entry)))
+                event.app.exit(result="left")
 
         @bindings.add(Keys.ControlP)
         def _(event: KeyPressEvent) -> None:
-            entry = to_plain_text(self.get_pointed_at()).strip()
+            entry_name = to_plain_text(self.get_pointed_at()).strip()
+            entry = self._choices[entry_name]
             if entry:
-                event.app.clipboard.set_data(ClipboardData(f"gs://{entry}"))
+                event.app.clipboard.set_data(ClipboardData(entry.path()))
 
         @bindings.add(Keys.ControlD)
         def _(event: KeyPressEvent) -> None:
-            entry = to_plain_text(self.get_pointed_at()).strip()
-            if entry and gfs.exists(entry):
-                gfs.download(entry, ".", recursive=gfs.isdir(entry))
+            entry_name = to_plain_text(self.get_pointed_at()).strip()
+            entry = self._choices[entry_name]
+            if entry:
+                gfs.download(
+                    entry.path(), ".", recursive=isinstance(entry, (Bucket, Directory))
+                )
 
         @bindings.add(Keys.Enter)
         def _(event: KeyPressEvent) -> None:
@@ -127,9 +151,8 @@ class CustomFormattedTextControl(FormattedTextControl):
         )
 
 
-@error_handler
 def custom_select(
-    choices: List[str], max_preview_height: int = 10, **kwargs: Any
+    choices: Dict[str, Entry], max_preview_height: int = 10, **kwargs: Any
 ) -> str:
     text_area = TextArea(prompt="QUERY> ", multiline=False)
 
@@ -142,23 +165,21 @@ def custom_select(
         ]
 
     control = CustomFormattedTextControl(
-        partial(filter_candidates, choices), focusable=True
+        partial(filter_candidates, choices), choices, focusable=True
     )
 
     candidates_display = ConditionalContainer(Window(control), ~IsDone())
 
     def get_entry_info() -> str:
-        entry = to_plain_text(control.get_pointed_at()).strip()
-        if not entry:
+        entry_name = to_plain_text(control.get_pointed_at()).strip()
+        entry = choices.get(entry_name)
+        if entry is None:
             return ""
-        if gfs.isfile(entry):
-            content: str = gfs.read_block(entry, 0, 50, delimiter=b"\n").decode("utf-8")
-            file_stats = gfs.stat(entry)
-            file_createdat = f"created_at: {file_stats['timeCreated']}"
-            file_updatedat = f"updated_at: {file_stats['updated']}"
-            content = "\n".join((file_createdat, file_updatedat, content))
-        else:
-            content = "\n".join(map(os.path.basename, gfs.ls(entry)[:10]))
+        content = ""
+        if isinstance(entry, File):
+            content = get_file_info(entry.path())
+        elif isinstance(entry, (Directory, Bucket)):
+            content = "\n".join(map(os.path.basename, entry.ls()[:10]))
         return content
 
     preview_control = FormattedTextControl(get_entry_info, focusable=False)
@@ -185,10 +206,30 @@ def custom_select(
     return to_plain_text(app.run()).strip()
 
 
-def traverse_gcs(choices: List[str]) -> str:
-    entry: str = custom_select(choices)
-    if not entry:
-        return traverse_gcs(gfs.buckets)
-    if gfs.isfile(entry):
+@error_handler
+def traverse_gcs(choices: Dict[str, Entry]) -> File:
+    result = custom_select(choices)
+    if result == "left":
+        entry = list(choices.values())[0]
+        if isinstance(entry, Bucket):
+            return traverse_gcs(entry.root)  # type: ignore
+        elif isinstance(entry, Directory):
+            parent = entry.parent
+            if isinstance(parent, Bucket):
+                return traverse_gcs(parent.root)  # type: ignore
+            return traverse_gcs(parent.parent.children)  # type: ignore
+        elif isinstance(entry, File):
+            return traverse_gcs(entry.parent.parent.children)  # type: ignore
+        else:
+            raise NotImplementedError
+
+    entry = choices[result]
+    if isinstance(entry, File):
         return entry
-    return traverse_gcs(gfs.ls(entry))
+    if not entry.children:  # type: ignore
+        for _, dirnames, filenames in gfs.walk(entry.path(), maxdepth=1):
+            for dirname in dirnames:
+                entry.add(Directory(dirname, entry))
+            for filename in filenames:
+                entry.add(File(filename, entry))
+    return traverse_gcs(entry.children)  # type: ignore

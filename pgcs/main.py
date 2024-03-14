@@ -1,9 +1,16 @@
 import argparse
+import os
+import pickle
+from typing import Dict
 
 import gcsfs
 
 from pgcs.custom_select import traverse_gcs
+from pgcs.file_system.base import Entry
+from pgcs.file_system.entries import Bucket
 from pgcs.preferences import PREF_FILE_PATH, GCSPref
+
+gfs = gcsfs.GCSFileSystem()
 
 
 def main() -> None:
@@ -12,19 +19,26 @@ def main() -> None:
     parser_traverse = subparsers.add_parser(
         "traverse", help="default positional argument `pg` == `pg traverse`"
     )
-    parser_traverse.add_argument("root", nargs="?")
     parser_pref = subparsers.add_parser("pref", help="set pref")
     parser_pref.add_argument("--init", action="store_true")
     parser_pref.add_argument("key", nargs="?")
     parser_pref.add_argument("value", nargs="?")
-    parser.set_defaults(cmd="traverse", root=None)
+    parser.set_defaults(cmd="traverse")
     args = parser.parse_args()
 
     pref = GCSPref.read() if PREF_FILE_PATH.exists() else GCSPref()
     if args.cmd == "traverse":
-        gfs = gcsfs.GCSFileSystem()
-        buckets = gfs.ls(args.root) if args.root is not None else gfs.buckets
-        traverse_gcs(buckets)
+        root: Dict[str, Entry] = {}
+        for bucket in gfs.buckets:
+            if os.path.exists(pref.cache_dir / bucket.rstrip("/")):
+                with open(pref.cache_dir / bucket.rstrip("/"), "rb") as f:
+                    root[bucket] = pickle.load(f)
+            else:
+                root[bucket] = Bucket(bucket.rstrip("/"), root)
+        traverse_gcs(root)
+        for bucket in root.values():
+            bucket.save(pref.cache_dir, force=True)
+
     elif args.cmd == "pref":
         if args.init:
             new_pref = GCSPref()
