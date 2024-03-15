@@ -67,7 +67,6 @@ class Directory(Entry):
             self._children = {}
         if not self._children:
             for _, dirnames, filenames in gfs.walk(self.path(), maxdepth=1):
-                print(f"{dirnames=}, {filenames=}")
                 for dirname in dirnames:
                     self.add(Directory(dirname, self))
                 for filename in filenames:

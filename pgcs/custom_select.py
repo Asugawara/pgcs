@@ -150,7 +150,6 @@ class CustomFormattedTextControl(FormattedTextControl):
 def custom_select(
     choices: Dict[str, Entry], max_preview_height: int = 10, **kwargs: Any
 ) -> str:
-    print(choices)
     text_area = TextArea(prompt="QUERY> ", multiline=False)
 
     def filter_candidates(choices: List[str]) -> List[Tuple[str, str]]:
