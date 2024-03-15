@@ -40,17 +40,6 @@ ITEM_CLASS = "class:item"
 SELECTED_CLASS = "class:selected"
 
 
-@lru_cache
-def get_file_info(file_path: str, preview: bool = False) -> str:
-    content = ""
-    if preview:
-        content = gfs.read_block(file_path, 0, 50, delimiter=b"\n").decode("utf-8")
-    file_stats = gfs.stat(file_path)
-    file_createdat = f"created_at: {file_stats['timeCreated']}"
-    file_updatedat = f"updated_at: {file_stats['updated']}"
-    return "\n".join((file_createdat, file_updatedat, content))
-
-
 class CustomFormattedTextControl(FormattedTextControl):
     def __init__(
         self,
@@ -139,6 +128,13 @@ class CustomFormattedTextControl(FormattedTextControl):
                     entry.path(), ".", recursive=isinstance(entry, (Bucket, Directory))
                 )
 
+        @bindings.add(Keys.ControlR)
+        def _(event: KeyPressEvent) -> None:
+            entry_name = to_plain_text(self.get_pointed_at()).strip()
+            entry = self._choices[entry_name]
+            if entry and isinstance(entry, (Directory, Bucket)):
+                entry.load(force=True)
+
         @bindings.add(Keys.Enter)
         def _(event: KeyPressEvent) -> None:
             content = self.get_pointed_at()
@@ -154,6 +150,7 @@ class CustomFormattedTextControl(FormattedTextControl):
 def custom_select(
     choices: Dict[str, Entry], max_preview_height: int = 10, **kwargs: Any
 ) -> str:
+    print(choices)
     text_area = TextArea(prompt="QUERY> ", multiline=False)
 
     def filter_candidates(choices: List[str]) -> List[Tuple[str, str]]:
@@ -177,7 +174,7 @@ def custom_select(
             return ""
         content = ""
         if isinstance(entry, File):
-            content = get_file_info(entry.path())
+            content = "\n".join(entry.stat())
         elif isinstance(entry, (Directory, Bucket)):
             content = "\n".join(map(os.path.basename, entry.ls()[:10]))
         return content
@@ -226,10 +223,6 @@ def traverse_gcs(choices: Dict[str, Entry]) -> File:
     entry = choices[result]
     if isinstance(entry, File):
         return entry
-    if not entry.children:  # type: ignore
-        for _, dirnames, filenames in gfs.walk(entry.path(), maxdepth=1):
-            for dirname in dirnames:
-                entry.add(Directory(dirname, entry))
-            for filename in filenames:
-                entry.add(File(filename, entry))
+    elif isinstance(entry, (Directory, Bucket)):
+        entry.load()
     return traverse_gcs(entry.children)  # type: ignore

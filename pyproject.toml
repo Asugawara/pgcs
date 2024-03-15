@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pgcs"
-version = "0.1.1"
+version = "0.1.2"
 description = "Pgcs is an intuitive TUI tool designed to simplify your interaction with Google Cloud Storage. Stay in your coding zone by navigating directories, searching files (with case-insensitive support), and previewing files all from your terminal. Easily save paths to clipboard or download files with straightforward keyboard shortcuts. Experience a seamless Cloud Storage interaction right from your terminal; no more swapping to a browser. Stimulate your productivity with Pgcs."
 authors = ["Asugawara <asgasw@gmail.com>"]
 readme = "README.md"
